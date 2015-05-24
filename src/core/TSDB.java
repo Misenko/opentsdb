@@ -146,9 +146,9 @@ public final class TSDB {
     treetable = config.getString("tsd.storage.hbase.tree_table").getBytes(CHARSET);
     meta_table = config.getString("tsd.storage.hbase.meta_table").getBytes(CHARSET);
 
-    metrics = new UniqueId(client, uidtable, METRICS_QUAL, METRICS_WIDTH);
-    tag_names = new UniqueId(client, uidtable, TAG_NAME_QUAL, TAG_NAME_WIDTH);
-    tag_values = new UniqueId(client, uidtable, TAG_VALUE_QUAL, TAG_VALUE_WIDTH);
+    metrics = new UniqueId(this.client, uidtable, METRICS_QUAL, METRICS_WIDTH);
+    tag_names = new UniqueId(this.client, uidtable, TAG_NAME_QUAL, TAG_NAME_WIDTH);
+    tag_values = new UniqueId(this.client, uidtable, TAG_VALUE_QUAL, TAG_VALUE_WIDTH);
     compactionq = new CompactionQueue(this);
 
     if (config.hasProperty("tsd.core.timezone")) {
