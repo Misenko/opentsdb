@@ -21,6 +21,7 @@ TSD_GROUP=opentsdb
 DAEMON=/usr/share/opentsdb/bin/tsdb
 DAEMON_OPTS=tsd
 PID_FILE=/var/run/$NAME.pid
+CLIENT_JAAS_FILE=/etc/opentsdb/hbase-client.jaas
 
 # Maximum number of open files
 MAX_OPEN_FILES=65535
@@ -66,6 +67,10 @@ start)
 
     if [ -n "$MAX_OPEN_FILES" ]; then
       ulimit -n $MAX_OPEN_FILES
+    fi
+
+    if [ -f "$CLIENT_JAAS_FILE" ]; then
+      export JVMARGS=-Djava.security.auth.login.config=$CLIENT_JAAS_FILE
     fi
 
     # start the daemon
