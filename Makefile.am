@@ -359,7 +359,7 @@ test_SRC := \
 	test/utils/TestJSON.java \
 	test/utils/TestPair.java \
 	test/utils/TestPluginLoader.java
-	
+
 test_plugin_SRC := \
   test/plugin/DummyPluginA.java \
   test/plugin/DummyPluginB.java \
@@ -379,7 +379,7 @@ test_plugin_SVCS := \
   META-INF/services/net.opentsdb.tsd.RpcPlugin \
   META-INF/services/net.opentsdb.tsd.RTPublisher \
   META-INF/services/net.opentsdb.tsd.StorageExceptionHandler
-  
+
 test_plugin_MF := \
   test/META-INF/MANIFEST.MF
 
@@ -669,7 +669,7 @@ uninstall-hook:
 get_runtime_dep_classpath = `for jar in $(test_DEPS); do $(find_jar); done | tr '\n' ':'`
 $(test_SRC): $(test_DEPS)
 	@$(refresh_src)
-	
+
 $(test_plugin_SRC): $(test_DEPS)
 	@$(refresh_src)
 
@@ -841,6 +841,8 @@ debian: dist staticroot
 	$(mkdir_p) $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(top_srcdir)/build-aux/deb/logback.xml $(distdir)/debian/etc/opentsdb
 	cp $(top_srcdir)/build-aux/deb/opentsdb.conf $(distdir)/debian/etc/opentsdb
+	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.user-example $(distdir)/debian/etc/opentsdb
+	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.service-example $(distdir)/debian/etc/opentsdb
 	cp $(srcdir)/src/create_table.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/upgrade_1to2.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/mygnuplot.sh $(distdir)/debian/usr/share/opentsdb/bin
@@ -862,7 +864,7 @@ debian: dist staticroot
 	`for dep_jar in $(tsdb_DEPS); do cp $$dep_jar \
 	     $(distdir)/debian/usr/share/opentsdb/lib; done;`
 	cp -r $(top_srcdir)/tools/* $(distdir)/debian/usr/share/opentsdb/tools
-	dpkg -b $(distdir)/debian $(distdir)/opentsdb-$(PACKAGE_VERSION)_all.deb
+	dpkg -b $(distdir)/debian $(distdir)/meta-opentsdb-$(PACKAGE_VERSION)_all.deb
 
 .PHONY: jar doc check gwtc gwtdev printdeps staticroot gwttsd rpm
 include third_party/include.mk

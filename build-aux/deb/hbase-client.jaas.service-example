@@ -1,0 +1,7 @@
+Client {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  useTicketCache=false
+  keyTab="/path/to/hbase.keytab"
+  principal="hbase/some.host.com@REALM";
+};

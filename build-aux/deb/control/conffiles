@@ -1,3 +1,5 @@
 /etc/init.d/opentsdb
 /etc/opentsdb/opentsdb.conf
 /etc/opentsdb/logback.xml
+/etc/opentsdb/hbase-client.jaas.user-example
+/etc/opentsdb/hbase-client.jaas.service-example
