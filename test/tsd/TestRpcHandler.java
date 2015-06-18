@@ -61,12 +61,6 @@ public final class TestRpcHandler {
   public void before() throws Exception {
     final Config config = new Config(false);
     tsdb = new TSDB(client, config);
-    rpc_manager = RpcManager.instance(tsdb);
-  }
-  
-  @After
-  public void after() {
-    rpc_manager.shutdown();
   }
   
   @Test
