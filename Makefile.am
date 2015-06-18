@@ -721,6 +721,8 @@ debian: dist staticroot
 	$(mkdir_p) $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(top_srcdir)/build-aux/deb/logback.xml $(distdir)/debian/etc/opentsdb
 	cp $(top_srcdir)/build-aux/deb/opentsdb.conf $(distdir)/debian/etc/opentsdb
+	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.user-example $(distdir)/debian/etc/opentsdb
+	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.service-example $(distdir)/debian/etc/opentsdb
 	cp $(srcdir)/src/create_table.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/upgrade_1to2.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/mygnuplot.sh $(distdir)/debian/usr/share/opentsdb/bin
@@ -742,7 +744,7 @@ debian: dist staticroot
 	`for dep_jar in $(tsdb_DEPS); do cp $$dep_jar \
 	     $(distdir)/debian/usr/share/opentsdb/lib; done;`
 	cp $(top_srcdir)/tools/* $(distdir)/debian/usr/share/opentsdb/tools
-	dpkg -b $(distdir)/debian $(distdir)/opentsdb-$(PACKAGE_VERSION)_all.deb
+	dpkg -b $(distdir)/debian $(distdir)/meta-opentsdb-$(PACKAGE_VERSION)_all.deb
 
 .PHONY: jar doc check gwtc gwtdev printdeps staticroot gwttsd rpm
 include third_party/include.mk
