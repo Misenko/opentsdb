@@ -12,6 +12,7 @@
 // see <http://www.gnu.org/licenses/>.
 package net.opentsdb.core;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,17 +119,35 @@ public final class TSDB {
    */
   public TSDB(final HBaseClient client, final Config config) {
     this.config = config;
-    this.client = client;
+    if (client == null) {
+      final org.hbase.async.Config async_config;
+      if (config.configLocation() != null && !config.configLocation().isEmpty()) {
+        try {
+          async_config = new org.hbase.async.Config(config.configLocation());
+        } catch (final IOException e) {
+          throw new RuntimeException("Failed to read the config file: " + 
+              config.configLocation(), e);
+        }
+      } else {
+        async_config = new org.hbase.async.Config();
+      }
+      async_config.overrideConfig("hbase.zookeeper.znode.parent", 
+          config.getString("tsd.storage.hbase.zk_basedir"));
+      async_config.overrideConfig("hbase.zookeeper.quorum", 
+          config.getString("tsd.storage.hbase.zk_quorum"));
+      this.client = new HBaseClient(async_config);
+    } else {
+      this.client = client;
+    }
 
-    this.client.setFlushInterval(config.getShort("tsd.storage.flush_interval"));
     table = config.getString("tsd.storage.hbase.data_table").getBytes(CHARSET);
     uidtable = config.getString("tsd.storage.hbase.uid_table").getBytes(CHARSET);
     treetable = config.getString("tsd.storage.hbase.tree_table").getBytes(CHARSET);
     meta_table = config.getString("tsd.storage.hbase.meta_table").getBytes(CHARSET);
 
-    metrics = new UniqueId(client, uidtable, METRICS_QUAL, METRICS_WIDTH);
-    tag_names = new UniqueId(client, uidtable, TAG_NAME_QUAL, TAG_NAME_WIDTH);
-    tag_values = new UniqueId(client, uidtable, TAG_VALUE_QUAL, TAG_VALUE_WIDTH);
+    metrics = new UniqueId(this.client, uidtable, METRICS_QUAL, METRICS_WIDTH);
+    tag_names = new UniqueId(this.client, uidtable, TAG_NAME_QUAL, TAG_NAME_WIDTH);
+    tag_values = new UniqueId(this.client, uidtable, TAG_VALUE_QUAL, TAG_VALUE_WIDTH);
     compactionq = new CompactionQueue(this);
 
     if (config.hasProperty("tsd.core.timezone")) {
@@ -158,9 +177,7 @@ public final class TSDB {
    * @since 2.0
    */
   public TSDB(final Config config) {
-    this(new HBaseClient(config.getString("tsd.storage.hbase.zk_quorum"),
-                         config.getString("tsd.storage.hbase.zk_basedir")),
-         config);
+    this(null, config);
   }
   
   /** @return The data point column family name */

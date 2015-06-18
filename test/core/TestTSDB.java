@@ -70,7 +70,7 @@ public final class TestTSDB {
   @Before
   public void before() throws Exception {
     PowerMockito.whenNew(HBaseClient.class)
-      .withArguments(anyString(), anyString()).thenReturn(client);
+      .withAnyArguments().thenReturn(client);
     config = new Config(false);
     config.setFixDuplicates(true); // TODO(jat): test both ways
     tsdb = new TSDB(config);
