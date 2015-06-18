@@ -16,6 +16,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
@@ -83,8 +84,10 @@ public final class TestFsck {
   @SuppressWarnings("unchecked")
   @Before
   public void before() throws Exception {
+    PowerMockito.whenNew(HBaseClient.class)
+      .withArguments(anyString(), anyString()).thenReturn(client);
     config = new Config(false);
-    tsdb = new TSDB(client, config);
+    tsdb = new TSDB(config);
     when(client.flush()).thenReturn(Deferred.fromResult(null));
     
     storage = new MockBase(tsdb, client, true, true, true, true);

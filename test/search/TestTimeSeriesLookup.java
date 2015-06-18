@@ -15,6 +15,7 @@ package net.opentsdb.search;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
@@ -37,6 +38,7 @@ import org.hbase.async.Scanner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -72,8 +74,10 @@ public class TestTimeSeriesLookup {
   
   @Before
   public void before() throws Exception {
+    PowerMockito.whenNew(HBaseClient.class)
+    .withArguments(anyString(), anyString()).thenReturn(client); 
     config = new Config(false);
-    tsdb = new TSDB(client, config);
+    tsdb = new TSDB(config);
 
     // replace the "real" field objects with mocks
     Field met = tsdb.getClass().getDeclaredField("metrics");

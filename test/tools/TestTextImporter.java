@@ -94,8 +94,10 @@ public class TestTextImporter {
   
   @Before
   public void before() throws Exception {
+    PowerMockito.whenNew(HBaseClient.class)
+      .withArguments(anyString(), anyString()).thenReturn(client);
     config = new Config(false);
-    tsdb = new TSDB(client, config);
+    tsdb = new TSDB(config);
 
     storage = new MockBase(tsdb, client, true, true, true, true);
     storage.setFamily("t".getBytes(MockBase.ASCII()));
