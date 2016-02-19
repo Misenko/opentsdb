@@ -25,7 +25,6 @@ import org.hbase.async.HBaseRpc;
 import org.hbase.async.KeyValue;
 import org.hbase.async.PleaseThrottleException;
 import org.hbase.async.PutRequest;
-import org.hbase.async.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,14 +83,13 @@ final class Magic {
         String[] queryArgs = Arrays.copyOf(args, args.length - 1);
 
         System.out.println("New tag value pair is: " + newTagValuePair);
-        System.out.println("Rest of the arguments: " + queryArgs);
 
         CliQuery.parseCommandLineQuery(queryArgs, tsdb, queries, null, null);
 
         final StringBuilder buf = new StringBuilder();
         for (final Query query : queries) {
-            final List<Scanner> scanners = Internal.getScanners(query);
-            for (Scanner scanner : scanners) {
+            final List<org.hbase.async.Scanner> scanners = Internal.getScanners(query);
+            for (org.hbase.async.Scanner scanner : scanners) {
                 ArrayList<ArrayList<KeyValue>> rows;
                 while ((rows = scanner.nextRows().joinUninterruptibly()) != null) {
                     for (final ArrayList<KeyValue> row : rows) {
@@ -129,15 +127,17 @@ final class Magic {
                             buf.setLength(importformat ? 0 : 2);
                             formatKeyValue(buf, tsdb, importformat, kv, base_time, metric);
                             if (buf.length() > 0) {
+                                buf.append('\n');
+
                                 exportedData = buf.toString();
                                 System.out.print(exportedData);
-                                //buf.append('\n');
+
                                 //System.out.print(buf);
                             }
                         }
 
                         if (exportedData != null) {
-                            importLine(tsdb, client, exportedData, newTagValuePair);
+                            importLines(tsdb, client, exportedData, newTagValuePair);
 
                             if (delete) {
                                 final DeleteRequest del = new DeleteRequest(table, key);
@@ -152,9 +152,10 @@ final class Magic {
 
     static volatile boolean throttle = false;
 
-    private static void importLine(final TSDB tsdb, final HBaseClient client, final String exportedData, final String newTagValuePair) {
-        // whole import line
-        String wholeImportLine = exportedData + " " + newTagValuePair;
+    private static void importLines(final TSDB tsdb, final HBaseClient client, final String exportedData, final String newTagValuePair) {
+        // scaner to go through lines
+        java.util.Scanner scanner = new java.util.Scanner(exportedData);
+        String line = null;
 
         try {
             final class Errback implements Callback<Object, Exception> {
@@ -181,70 +182,81 @@ final class Magic {
                 }
             };
             final Errback errback = new Errback();
-            LOG.info("importing line:" + wholeImportLine);
-            final String[] words = Tags.splitString(wholeImportLine, ' ');
-            final String metric = words[0];
-            if (metric.length() <= 0) {
-                throw new RuntimeException("invalid metric: " + metric);
-            }
-            final long timestamp;
-            try {
-                timestamp = Tags.parseLong(words[1]);
-                if (timestamp <= 0) {
-                    throw new RuntimeException("invalid timestamp: " + timestamp);
+            while (scanner.hasNextLine()) {
+                line = scanner.nextLine();
+
+                // check whether we are not looping over already modified data
+                if (line.contains(newTagValuePair)) {
+                    throw new RuntimeException("line " + line + " already contain new tag value pair");
                 }
-            } catch (final RuntimeException e) {
-                throw e;
-            }
 
-            final String value = words[2];
-            if (value.length() <= 0) {
-                throw new RuntimeException("invalid value: " + value);
-            }
+                String wholeImportLine = line + " " + newTagValuePair;
+                LOG.info("importing line:" + wholeImportLine);
 
-            try {
-                final HashMap<String, String> tags = new HashMap<String, String>();
-                for (int i = 3; i < words.length; i++) {
-                    if (!words[i].isEmpty()) {
-                        Tags.parse(tags, words[i]);
+                final String[] words = Tags.splitString(wholeImportLine, ' ');
+                final String metric = words[0];
+                if (metric.length() <= 0) {
+                    throw new RuntimeException("invalid metric: " + metric);
+                }
+                final long timestamp;
+                try {
+                    timestamp = Tags.parseLong(words[1]);
+                    if (timestamp <= 0) {
+                        throw new RuntimeException("invalid timestamp: " + timestamp);
                     }
+                } catch (final RuntimeException e) {
+                    throw e;
                 }
 
-                final WritableDataPoints dp = getDataPoints(tsdb, metric, tags);
-                Deferred<Object> d;
-                if (Tags.looksLikeInteger(value)) {
-                    d = dp.addPoint(timestamp, Tags.parseLong(value));
-                } else {  // floating point value
-                    d = dp.addPoint(timestamp, Float.parseFloat(value));
+                final String value = words[2];
+                if (value.length() <= 0) {
+                    throw new RuntimeException("invalid value: " + value);
                 }
-                d.addErrback(errback);
-                if (throttle) {
-                    LOG.info("Throttling...");
-                    long throttle_time = System.nanoTime();
-                    try {
-                        d.joinUninterruptibly();
-                    } catch (final Exception e) {
-                        throw new RuntimeException("Should never happen", e);
-                    }
-                    throttle_time = System.nanoTime() - throttle_time;
-                    if (throttle_time < 1000000000L) {
-                        LOG.info("Got throttled for only " + throttle_time
-                                + "ns, sleeping a bit now");
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException("interrupted", e);
+
+                try {
+                    final HashMap<String, String> tags = new HashMap<String, String>();
+                    for (int i = 3; i < words.length; i++) {
+                        if (!words[i].isEmpty()) {
+                            Tags.parse(tags, words[i]);
                         }
                     }
-                    LOG.info("Done throttling...");
-                    throttle = false;
+
+                    final WritableDataPoints dp = getDataPoints(tsdb, metric, tags);
+                    Deferred<Object> d;
+                    if (Tags.looksLikeInteger(value)) {
+                        d = dp.addPoint(timestamp, Tags.parseLong(value));
+                    } else {  // floating point value
+                        d = dp.addPoint(timestamp, Float.parseFloat(value));
+                    }
+                    d.addErrback(errback);
+                    if (throttle) {
+                        LOG.info("Throttling...");
+                        long throttle_time = System.nanoTime();
+                        try {
+                            d.joinUninterruptibly();
+                        } catch (final Exception e) {
+                            throw new RuntimeException("Should never happen", e);
+                        }
+                        throttle_time = System.nanoTime() - throttle_time;
+                        if (throttle_time < 1000000000L) {
+                            LOG.info("Got throttled for only " + throttle_time
+                                    + "ns, sleeping a bit now");
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException("interrupted", e);
+                            }
+                        }
+                        LOG.info("Done throttling...");
+                        throttle = false;
+                    }
+                } catch (final RuntimeException e) {
+                    throw e;
                 }
-            } catch (final RuntimeException e) {
-                throw e;
             }
         } catch (RuntimeException e) {
             LOG.error("Exception caught while processing line "
-                    + wholeImportLine, e);
+                    + exportedData, e);
             throw e;
         }
     }
