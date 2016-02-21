@@ -131,18 +131,15 @@ final class Magic {
 
                                 exportedData = buf.toString();
                                 System.out.print(exportedData);
+                                importLines(tsdb, client, exportedData, newTagValuePair);
 
                                 //System.out.print(buf);
                             }
                         }
 
-                        if (exportedData != null) {
-                            importLines(tsdb, client, exportedData, newTagValuePair);
-
-                            if (delete) {
-                                final DeleteRequest del = new DeleteRequest(table, key);
-                                client.delete(del);
-                            }
+                        if (delete) {
+                            final DeleteRequest del = new DeleteRequest(table, key);
+                            client.delete(del);
                         }
                     }
                 }
