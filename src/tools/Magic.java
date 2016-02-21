@@ -94,7 +94,7 @@ final class Magic {
                 while ((rows = scanner.nextRows().joinUninterruptibly()) != null) {
                     for (final ArrayList<KeyValue> row : rows) {
                         // where exported line will go
-                        String exportedData = null;
+                        StringBuilder exportedData = new StringBuilder();
 
                         buf.setLength(0);
                         final byte[] key = row.get(0).key();
@@ -119,6 +119,7 @@ final class Magic {
 
                         // Print individual cells.
                         buf.setLength(0);
+                        exportedData.setLength(0);
                         if (!importformat) {
                             buf.append("  ");
                         }
@@ -129,9 +130,8 @@ final class Magic {
                             if (buf.length() > 0) {
                                 buf.append('\n');
 
-                                exportedData = buf.toString();
+                                exportedData.append(buf.toString());
                                 System.out.print(exportedData);
-                                importLines(tsdb, client, exportedData, newTagValuePair);
 
                                 //System.out.print(buf);
                             }
@@ -141,6 +141,8 @@ final class Magic {
                             final DeleteRequest del = new DeleteRequest(table, key);
                             client.delete(del);
                         }
+
+                        importLines(tsdb, client, exportedData.toString(), newTagValuePair);
                     }
                 }
             }
