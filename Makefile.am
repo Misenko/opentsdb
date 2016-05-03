@@ -843,6 +843,7 @@ debian: dist staticroot
 	cp $(top_srcdir)/build-aux/deb/opentsdb.conf $(distdir)/debian/etc/opentsdb
 	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.user-example $(distdir)/debian/etc/opentsdb
 	cp $(top_srcdir)/build-aux/deb/hbase-client.jaas.service-example $(distdir)/debian/etc/opentsdb
+	cp $(top_srcdir)/build-aux/deb/tsdb.local $(distdir)/debian/usr/share/opentsdb/bin
 	cp $(srcdir)/src/create_table.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/upgrade_1to2.sh $(distdir)/debian/usr/share/opentsdb/tools
 	cp $(srcdir)/src/mygnuplot.sh $(distdir)/debian/usr/share/opentsdb/bin
